@@ -1,0 +1,48 @@
+load abs 
+
+(msos Lang/ML/Conc is
+ see Lang/ML/Cmd', Lang/ML/Abs .
+
+ see Cons/Cmd, Cons/Cmd/send-chan-seq, 
+     Cons/Cmd/start .
+
+ see Cons/Exp, Cons/Exp/recv-chan, 
+     Cons/Exp/alloc-chan .
+
+ see Cons/Sys, Cons/Sys/Cmd, Cons/Sys/conc, 
+     Cons/Sys/conc-chan, Cons/Sys/quiet .
+sosm)
+
+(mod Lang/ML/Conc' is
+ including Lang/ML/Conc .
+ including META-LEVEL .
+
+ op meta-update-ph : TermList Value -> TermList .
+
+ var  q : Qid .
+ var  v : Value .
+ var  c : Chan .
+ vars tl tl1 tl2 : TermList .
+ var  t : Term .
+ var  s : Sys .
+ var CS : Chans .
+
+ eq meta-update-ph (q[tl1, tl2], c, v) =
+       q[meta-update-ph (tl1, c, v), 
+             meta-update-ph (tl2, c, v)] .
+
+ eq meta-update-ph ((tl1, tl2), c, v) =
+             (meta-update-ph (tl1, c, v), 
+              meta-update-ph (tl2, c, v)) .
+
+ ceq meta-update-ph ('ph[t], c, v) = upTerm(v)
+ if upTerm (c) == t .
+
+ eq meta-update-ph (tl, c, v) = tl [owise].
+
+ op UPDATE-ERROR : -> Sys [ctor] .
+ eq update-ph(s, c, v) = 
+    downTerm(meta-update-ph(upTerm(s), c, v), UPDATE-ERROR) .
+
+ eq new-chan (CS) = chan (1 + size (CS)) .
+endm)

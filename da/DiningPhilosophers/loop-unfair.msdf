@@ -1,0 +1,195 @@
+--- Dining Philosophers.
+--- See Lynch.  Distributed Algorithms. (RightLeftDP algorithm)
+
+--- This is a CORRECT specification of the algorithm, in which the
+--- philosophers are in loop (that is, as soon as they finish eating,
+--- they are hungry again).  Also, this specification has no fairness
+--- specification builtin.
+
+(msos RIGHTLEFTDP is
+ 
+ Queue = (Int, Pids) Map .
+
+ Pids = (Int) List .
+
+ Int ::= n .
+
+ St .
+ St ::= srem
+      | stest-right
+      | stest-left
+      | sleave-try
+      | scrit
+      | sreset-right
+      | sreset-left
+      | sleave-exit 
+      | stry
+      | sexit .
+      
+
+ Label = {q : Queue, q' : Queue, ...} .
+
+ Proc .
+ Proc ::= prc (Int, St) .
+
+ Soup .
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+               prc (Int, St) -{...}-> prc (Int, St')
+ -- ---------------------------------------------------------
+ (prc (Int, St) Soup) : Soup -{...}-> (prc (Int, St')) Soup .
+
+    odd (Int)
+ -- ------------------------------------------------
+ prc (Int, stry) : Proc --> prc (Int, stest-right) .
+
+    odd (Int),
+    Pids := lookup (Int, Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := (Int |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-right) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, stest-left) .
+
+    odd (Int),
+    Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := ((((Int + 1) rem n)) |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-left) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, sleave-try) .
+
+    odd (Int)
+ -- -----------------------------------------------
+ prc (Int, sleave-try) : Proc --> prc (Int, scrit) .
+
+    odd (Int)
+ -- -----------------------------------------------
+ prc (Int, scrit) : Proc -{-}-> prc (Int, sexit) .
+
+    odd (Int)
+ -- -----------------------------------------------
+ prc (Int, sexit) : Proc --> prc (Int, sreset-right) .
+
+    odd (Int), Pids := lookup (Int, Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := (Int |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-right) : Proc 
+    -{q = Queue, q' = Queue', -}->
+                prc (Int, sreset-left) .
+
+    odd (Int), Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := ((((Int + 1) rem n)) |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-left) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, sleave-exit) .
+
+    odd (Int)
+ -- -----------------------------------------------
+ prc (Int, sleave-exit) : Proc --> prc (Int, srem) .
+
+    odd (Int)
+ -- -----------------------------------------
+ prc (Int, srem) : Proc --> prc (Int, stry) .
+
+--- code for even processes
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, stry) : Proc --> prc (Int, stest-left) .
+
+    even (Int),
+    Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := (((Int + 1) rem n) |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-left) : Proc 
+    -{q = Queue, q' = Queue', -}-> 
+                prc (Int, stest-right) .
+
+    even (Int),
+    Pids := lookup (Int, Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := (Int |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-right) : Proc 
+    -{q = Queue, q' = Queue', -}-> 
+                prc (Int, sleave-try) .
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, sleave-try) : Proc --> prc (Int, scrit) .
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, scrit) : Proc -{-}-> prc (Int, sexit) .
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, sexit) : Proc --> prc (Int, sreset-left) .
+
+
+    even (Int), Pids := lookup (Int, Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := (Int |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-left) : Proc 
+    -{q = Queue, q' = Queue', -}->
+                prc (Int, sreset-right) .
+
+    even (Int), Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := (((Int + 1) rem n) |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-right) : Proc 
+    -{q = Queue, q' = Queue', -}->
+                prc (Int, sleave-exit) .
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, sleave-exit) : Proc --> prc (Int, srem) .
+
+    even (Int)
+ -- -----------------------------------------------
+ prc (Int, srem) : Proc --> prc (Int, stry) .
+sosm)
+
+(mod SEARCH is
+ including RIGHTLEFTDP .
+
+ op initial-soup : Int -> Soup .
+ op initial-rec : Int -> Record .
+ op make-queue : Int -> Map{Int,Pids} .
+
+ eq n = 7 .
+
+ var I : Int .
+
+ ceq make-queue (I) = I |-> [] +++ make-queue (I - 1) if I > 0 .
+  eq make-queue (0) = 0 |-> [] .
+
+ ceq initial-soup (I) = prc (I, stry) initial-soup (I - 1) if I > 0 .
+  eq initial-soup (0) = prc (0, stry) .
+
+ eq initial-rec (I) = { q = (make-queue (I)) } .
+
+ op initial-conf : -> Conf .
+ eq initial-conf = < initial-soup (n - 1) ::: 'Soup, initial-rec (n - 1) > .
+endm)
+
+(search initial-conf =>! C:Conf .)

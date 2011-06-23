@@ -1,0 +1,154 @@
+--- Dining Philosophers.
+--- See Lynch.  Distributed Algorithms. (RightLeftDP algorithm)
+
+--- This is a WRONG specifications of the DP algorithm.  It also doesn't loop.
+
+(msos RIGHTLEFTDP is
+ 
+ Pids = (Int) List .
+
+ Queue = (Int, Pids) Map .
+
+ Int ::= n .
+
+ St .
+ St ::= srem
+      | stest-right
+      | stest-left
+      | sleave-try
+      | scrit
+      | sreset-right
+      | sreset-left
+      | sleave-exit 
+      | stry
+      | sexit .
+      
+
+ Label = {fair : Int, fair' : Int, out' : Int*, q : Queue, q' : Queue, ...} .
+
+ Proc .
+ Proc ::= prc (Int, St) .
+
+ Soup .
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+    Int' := (Int + 1) rem n,
+               prc (Int, St) -{fair = Int, fair' = Int, ...}-> prc (Int, St')
+ -- -----------------------------------------------------------------------------------
+ (prc (Int, St) Soup) : Soup -{fair = Int, fair' = Int', ...}-> (prc (Int, St')) Soup .
+
+ prc (Int, stry) : Proc --> prc (Int, stest-right) .
+
+    Pids := lookup (Int, Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := (Int |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-right) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, stest-left) .
+
+    Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := if (not Int in Pids) 
+             then insert-back (Int, Pids)
+             else Pids fi,
+    Queue' := ((((Int + 1) rem n)) |-> Pids') / Queue,
+    first (Pids') == Int
+ -- ---------------------------------------------
+ prc (Int, stest-left) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, sleave-try) .
+
+ prc (Int, sleave-try) : Proc --> prc (Int, scrit) .
+
+ prc (Int, scrit) : Proc -{out' = Int, -}-> prc (Int, sexit) .
+
+ prc (Int, sexit) : Proc --> prc (Int, sreset-right) .
+
+    Pids := lookup (Int, Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := (Int |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-right) : Proc 
+    -{q = Queue, q' = Queue', -}->
+                prc (Int, sreset-left) .
+
+    Pids := lookup (((Int + 1) rem n), Queue),
+    Pids' := remove (Int, Pids),
+    Queue' := ((((Int + 1) rem n)) |-> Pids') / Queue
+ -- -----------------------------------------------
+ prc (Int, sreset-left) : Proc 
+    -{q = Queue, q' = Queue', -}-> prc (Int, sleave-exit) .
+
+ prc (Int, sleave-exit) : Proc --> prc (Int, srem) .
+
+ prc (Int, srem) : Proc --> prc (Int, srem) .
+
+sosm)
+
+(mod SEARCH is
+ including RIGHTLEFTDP .
+
+ op initial-soup : Int -> Soup .
+ op initial-rec : Int -> Record .
+ op make-queue : Int -> Map{Int,Pids} .
+
+ eq n = 200 .
+
+ var I : Int .
+
+ ceq make-queue (I) = I |-> [()] +++ make-queue (I - 1) if I > 0 .
+  eq make-queue (0) = 0 |-> [()] .
+
+ ceq initial-soup (I) = prc (I, stry) initial-soup (I - 1) if I > 0 .
+  eq initial-soup (0) = prc (0, stry) .
+
+ eq initial-rec (I) = { fair = 0, out' = (()).Seq{Int}, 
+                        q = (make-queue (I)) } .
+
+ op initial-conf : -> Conf .
+ eq initial-conf = < initial-soup (n - 1) ::: 'Soup, initial-rec (n - 1) > .
+                    
+endm)
+
+--- This should find all final states INCLUDING one in which the
+--- philosophers are in deadlock.
+
+(search initial-conf =>! C:Conf .)
+
+(mod MODEL-CHECK is
+ including MODEL-CHECKER .
+ including SEARCH .
+
+ subsort Conf < State .
+
+ op _in_ : Int Seq`(Int`) ~> Bool .
+
+ var  I : Int .
+ vars S S' : Seq`(Int`) .
+ var  St : St .
+
+ eq I in (S, I, S') = true .
+
+ op check : Int Seq`(Int`) -> Bool .
+ ceq check (I, S) = I in S and check (I - 1, S) if I > 0 .
+ eq check (0, S) = 0 in S .
+
+ op check : Int -> Prop .
+
+ ceq (< S:Soup, { out' = S, PR:PreRecord } >) |= (check (I)) = true
+ if check (I, S) .
+
+ op state : Int St -> Prop .
+ eq (< (prc (I, St) S:Soup) ::: 'Soup, R:Record >)
+    |=  state (I, St) = true .
+
+ op any-state : St -> Prop .
+ eq (< (prc (I, St) S:Soup) ::: 'Soup, R:Record >)
+    |=  any-state (St) = true .
+
+endm)
+
+--- the counter-example should finish in the deadlocked state.
+(red modelCheck (initial-conf, <> check (n - 1)) .)

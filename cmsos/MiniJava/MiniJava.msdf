@@ -1,0 +1,76 @@
+(msos MiniJava is
+ see Cons/Prog, Cons/Prog/Exp .
+ see Cons/Exp, Cons/Exp/Boolean, Cons/Exp/Int, Cons/Exp/local,
+     Cons/Exp/Id, Cons/Exp/cond, Cons/Exp/app-Op,
+     Cons/Exp/app-Id, Cons/Exp/tup, Cons/Exp/tup-seq .
+ see Cons/Arg, Cons/Arg/Exp .
+ see Cons/Op .
+ see Cons/Id .
+ see Cons/Prog, Cons/Prog/Dec .
+ see Cons/Dec, Cons/Dec/bind, Cons/Dec/simult-seq, 
+     Cons/Dec/accum, Cons/Dec/local .
+ see Cons/Exp, Cons/Exp/local .
+ see Cons/Cmd, Cons/Cmd/seq-n, Cons/Cmd/effect, Cons/Cmd/while,
+     Cons/Cmd/print .
+ see Cons/Exp, Cons/Exp/seq-Cmd-Exp, Cons/Exp/seq-Exp-Cmd,
+     Cons/Exp/assign-seq, Cons/Exp/ref, Cons/Exp/assigned .
+ see Cons/Var, Cons/Var/alloc, Cons/Var/deref .
+ see Cons/Exp/ref .
+ see Cons/Exp, Cons/Exp/Abs, Cons/Exp/close, Cons/Exp/app-seq .
+ see Cons/Abs, Cons/Abs/abs-Exp, Cons/Abs/closure .
+ see Cons/Par, Cons/Par/bind, Cons/Par/tup .
+ see Cons/Dec, Cons/Dec/app, Cons/Dec/rec .
+
+ Bindable ::= Value | Op .
+ Op ::= nth (Int) | plus | times | minus | eq | lt | gt .
+ Passable ::= Value .
+ Storable ::= Value .
+sosm)
+
+(mod MiniJava' is
+ including MiniJava .
+
+ var I : Int .
+ var V : Value .
+ var VL : Seq{Value} .
+
+ op init-rec : -> Record .
+ eq init-rec = { out' = (()).Seq{Value},
+                 env = (void).Map{Id,Bindable},
+                 store = (void).Map{Cell,Storable} } .
+
+ vars i1 i2 : Int .                 
+ eq apply-op (plus, (i1, i2)) = i1 + i2 .
+ eq apply-op (minus, (i1, i2)) = i1 - i2 .
+ eq apply-op (times, (i1, i2)) = i1 * i2 .
+ eq apply-op (eq, (i1, i2)) = if i1 == i2 then tt else ff fi .
+ eq apply-op (lt, (i1, i2)) = if i1 < i2 then tt else ff fi .
+ eq apply-op (gt, (i1, i2)) = if i1 > i2 then tt else ff fi .
+
+ op ide : Qid -> Id .
+ op ide : Op -> Id .
+
+ eq init-env = (ide(eq) |-> eq +++
+                ide(lt) |-> lt +++
+                ide(gt) |-> gt +++
+                ide(plus)  |-> plus +++
+                ide(times) |-> times +++
+                ide(minus) |-> minus) .
+
+
+ eq apply-op (nth (0),  (V, VL)) = V .
+ ceq apply-op (nth (I),  (V, VL)) = 
+     apply-op (nth (I - 1),  (VL)) if I > 0 .
+
+ var Store : Store .
+ eq new-cell (Store) = cell (length (Store) + 1) .
+
+ sort Output .
+ op output : Conf -> Output .
+ op output : Seq{Value} -> Output .
+
+ rl output(< V:Value ::: 'Exp, { out' = VL:Seq{Value}, 
+    PR:PreRecord } >) => output(VL:Seq{Value}) .
+
+endm)
+

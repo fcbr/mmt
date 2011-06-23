@@ -1,0 +1,63 @@
+(msos PROCESS is
+
+ Proc .
+ Soup .
+
+ Proc ::= prc Int .
+
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+ Label = { fair : Int, fair' : Int, ... } .
+
+               Proc -{...}-> Proc'
+ -- -------------------------------------
+ (Proc Soup) : Soup -{...}-> Proc' Soup .
+
+sosm)
+
+(msos NEW-THREAD-GAME is 
+ see PROCESS .
+
+ Label = {sh : Int, sh' : Int, ...} .
+
+    Int < 5, Int' := Int + 1
+ -- ------------------------------------------------
+ (prc 0) : Proc -{sh = Int, sh' = Int', -}-> prc 0 .
+
+    Int >= 5, Int' := Int
+ -- ------------------------------------------------
+ (prc 0) : Proc -{sh = Int, sh' = Int', -}-> prc 0 .
+
+
+    Int > 0, Int' := Int - 1
+ -- ------------------------------------------------
+ (prc 1) : Proc -{sh = Int, sh' = Int', -}-> prc 1 .
+
+    Int <= 0, Int' := Int
+ -- ------------------------------------------------
+ (prc 1) : Proc -{sh = Int, sh' = Int', -}-> prc 1 .
+
+sosm)
+
+(mod CHECK is
+ including NEW-THREAD-GAME .
+ including MODEL-CHECKER .
+
+ op init : -> Conf .
+
+ eq init = < (prc 0 prc 1) ::: 'Soup, { sh = 0, fair = 0 } > .
+
+ vars I I' : Int .
+ var  S : Soup .
+ var  PR : PreRecord .
+
+ subsort Conf < State .
+
+ op max-sh : Int -> Prop .
+ ceq (< S, { sh = I', PR } >) |= max-sh (I) = true if I' <= I .
+endm)
+
+--- this should return a counter-example
+
+(red modelCheck (init, [] max-sh (1)) .)

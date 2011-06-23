@@ -1,0 +1,10 @@
+
+(mod PARSED is                     
+ including CML-INTERPRETER .       
+                                   
+ op AST : -> Sys .                 
+ eq AST = (quiet (effect (local (bind ide('c) alloc-chan) (seq (seq ((effect (seq (start (close (abs (bind (ide('x))) (seq (send-chan-seq ide('c) 10) (tup ()))))) (tup ()))), (effect (seq (start (close (abs (bind (ide('x))) (seq (send-chan-seq ide('c) 20) (tup ()))))) (tup ()))))) (seq (start (close (abs (bind (ide('x))) (recv-chan ide('c))))) (tup ())))))) .                     
+endm)                              
+                                   
+(rew exec (AST) .)                 
+---(search exec (AST) =>! C:Conf .)

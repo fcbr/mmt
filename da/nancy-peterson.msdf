@@ -1,0 +1,104 @@
+--- Peterson's solution for mutual exclusion (2-process version)
+--- See Lynch. Distributed Algorithms.
+
+(msos PETERSON2P is
+ Turn .
+ Turn ::= turn (Int) .
+
+ Flag .
+ Flag ::= flag (Int) .
+
+ Flags = (Int, Flag) Map .
+
+ St .
+ St ::= srem 
+      | sset-flag 
+      | sset-turn 
+      | scheck-flag 
+      | scheck-turn
+      | sleave-try
+      | scrit
+      | sreset
+      | sleave-exit 
+      | stry
+      | sexit .
+
+ Label = {turn : Turn, turn' : Turn, fair : Int, fair' : Int,
+          flags : Flags, flags' : Flags, ...} .
+
+ Proc .
+ Proc ::= prc (Int, St) .
+
+ Soup .
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+
+                prc(Int, St) -{...}-> prc(Int, St')
+ -- -------------------------------------------------------
+ (prc (Int, St) Soup) : Soup -{...}-> prc (Int, St') Soup .
+
+ prc (Int, stry) : Proc --> prc (Int, sset-flag) .
+
+    Flags' := (Int |-> flag (1)) / Flags
+ -- -----------------------------------------------------
+ prc (Int, sset-flag) : Proc 
+    -{flags = Flags, flags' = Flags', -}-> prc (Int, sset-turn) .
+
+    Turn' := turn (Int)
+ -- -------------------------------------------------------
+ prc (Int, sset-turn) : Proc 
+    -{turn = Turn, turn' = Turn', -}-> prc (Int, scheck-flag) .
+
+    *** mn is the monus function, defined in @@INTEGER. 
+    flag (Int') := lookup (mn (1, Int), Flags),
+    St := if Int' == 0 then sleave-try else scheck-turn fi
+ -- ---------------------------------------------------------
+ prc (Int, scheck-flag) : Proc 
+    -{flags = Flags, flags' = Flags, -}-> prc (Int, St) .
+
+    turn (Int') := Turn,
+    St := if Int' =/= Int then sleave-try else scheck-flag fi
+ -- ------------------------------------------------------------
+ prc (Int, scheck-turn) : Proc  
+    -{turn = Turn, turn' = Turn, -}-> prc (Int, St) .
+
+ prc (Int, sleave-try) : Proc 
+    --> prc (Int, scrit) .
+
+ prc (Int, scrit) : Proc --> prc (Int, sexit) .
+
+ prc (Int, sexit) : Proc --> prc (Int, sreset) .
+
+         Flags' := (Int |-> flag (0)) / Flags
+ -- --------------------------------------------------
+ prc (Int, sreset) : Proc 
+    -{flags = Flags, flags' = Flags', -}-> 
+                prc (Int, sleave-exit) .
+
+ prc (Int, sleave-exit) : Proc --> prc (Int, srem) .
+
+ prc (Int, srem) : Proc --> prc (Int, stry) .
+sosm) 
+
+(mod SEARCH is
+ including PETERSON2P .
+
+ op initial-soup : -> Soup .
+ op initial-rec : -> Record .
+
+ eq initial-soup =
+    prc (0, srem)
+    prc (1, srem) .
+
+ eq initial-rec = { flags = (0 |-> flag (0) +++ 1 |-> flag (0)),
+                    flags' = void, fair = 0, fair' = 0,
+                    turn = turn (0), turn' = turn (0) } .
+endm)
+
+(search < initial-soup ::: 'Soup, initial-rec > =>* C:Conf .)
+
+(search < initial-soup ::: 'Soup, initial-rec > =>*
+        < (prc (0, scrit)
+           prc (1, scrit)) ::: 'Soup, 
+          R:Record > .)

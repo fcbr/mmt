@@ -1,0 +1,31 @@
+You need the following programs if you want to compile the ML parser.
+
+bison 1.875a
+flex 2.5.31
+gcc 2.95.4
+
+running `make' on the 'converter' directory should Just Work.
+(The current binary is compiled for Darwin Kernel Version 8.6.0, under
+MacOS X 10.4.6)
+
+To run the ML examples, cat them through the parser and feed the
+resulting code to the MMT.  You must first input the ML specification
+by loading the ml.maude file. The following examples assume you are
+positioned in the 'ML' directory.
+
+Example:
+
+The `examples/imperative-example.ml' contains the following code:
+
+cml 
+ let val x = ref 1 in x := ((!x) + (!x)) end
+
+To execute this code, do the following:
+
+$ cat examples/imperative-example.ml | converter/ml > \
+   examples/imperative-example.msdf
+
+To run it, assuming you have defined the 'mmt' alias properly, do the
+following:
+
+$ mmt ../cmsos.msdf semantics/ml.maude examples/imperative-example.maude

@@ -1,0 +1,88 @@
+--- Leader election on an asynchronous ring
+--- See Lynch.  Distributed Algorithms.
+
+(msos ASYNCH-LCR is
+
+ St .
+ St ::= start
+      | waiting
+      | leader .
+
+ Proc .
+ Proc ::= prc (Int, Int', St) .
+
+ Msg .
+ Msg ::= m Int to Int .
+
+ Soup .
+ Soup ::= Proc | Msg .
+ Soup ::= Soup Soup [assoc comm] .
+
+                Soup1 -{...}-> Soup'1
+ -- -----------------------------------------
+ (Soup1 Soup2) : Soup -{...}-> Soup'1 Soup2 .
+
+ prc (Int, Int', start) : Soup --> 
+                prc (Int, Int', waiting) (m Int to Int') .
+
+    Int'' > Int
+ -- -----------------------------------------------------
+ prc (Int, Int', waiting) (m Int'' to Int) : Soup -->
+             prc (Int, Int', waiting) (m Int'' to Int') .
+
+    Int'' < Int
+ -- -----------------------------------------------------
+ prc (Int, Int', waiting) (m Int'' to Int) : Soup -->
+             prc (Int, Int', waiting) .
+
+
+    Int'' == Int
+ -- ------------------------------------------------------
+ prc (Int, Int', waiting) (m Int'' to Int) : Soup -->
+                                 prc (Int, Int', leader) .
+sosm)
+
+(mod CHECK is
+ including ASYNCH-LCR .
+ including MODEL-CHECKER .
+
+ op leaders : Soup -> Int .
+
+ vars S S' : Soup .
+ vars I I' : Int .
+ var  R : Record .
+ vars St : St .
+
+ eq leaders (S S') = leaders (S) + leaders (S') .
+ eq leaders (prc (I, I', leader)) = 1 .
+ eq leaders (prc (I, I', waiting)) = 0 .
+ eq leaders (prc (I, I', start)) = 0 .
+ eq leaders (m I to I') = 0 .
+
+ subsort Conf < State .
+
+ op oneLeader : -> Prop .
+ eq < S ::: 'Soup, R > |= oneLeader = (leaders (S) == 1) .
+
+ op noLeader : -> Prop .
+ eq < S ::: 'Soup, R > |= noLeader = (leaders (S) == 0) .
+
+ op n : -> Int .
+ eq n = 3 .
+
+ op init : -> Conf .
+ eq init = < init (n - 1) ::: 'Soup, { null } > .
+
+ op init : Int -> Soup .
+ ceq init (I) = prc (I, (I + 1) rem n, start) init (I - 1) if I > 0 .
+ eq init (0) = prc (0, 1, start) .
+endm)
+
+--- In all runs, eventually there will be one leader
+(red modelCheck (init, <> [] oneLeader) .)
+
+--- In no run there will never be a leader
+(red modelCheck (init, ~ [] noLeader) .)
+
+--- In all runs, there will be no leader until there is a leader
+(red modelCheck (init, [] (noLeader U oneLeader)) .)

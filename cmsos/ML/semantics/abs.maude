@@ -1,0 +1,13 @@
+load cmd
+
+(msos Lang/ML/Abs is
+ see Lang/ML/Dec .
+
+ see Cons/Exp, Cons/Exp/Abs, Cons/Exp/close, Cons/Exp/app-seq .
+
+ see Cons/Abs, Cons/Abs/abs-Exp, Cons/Abs/closure .
+
+ see Cons/Par, Cons/Par/bind . --- Cons/Par/tup (not yet implemented)
+
+ see Cons/Dec, Cons/Dec/app, Cons/Dec/rec .
+sosm)

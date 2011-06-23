@@ -1,0 +1,25 @@
+load conc
+
+(mod CML-INTERPRETER is
+ including Lang/ML/Exp' .
+ including Lang/ML/Dec .
+ including Lang/ML/Cmd' .
+ including Lang/ML/Abs .
+ including Lang/ML/Conc' .
+
+ op init-rec : -> Record .
+ eq init-rec = { chans = {},
+                 starting' = (()).Seq{Abs},
+                 event' = (()).Seq{Event},
+                 env = (void).Map{Id,Bindable}, 
+                 store = (void).Map{Cell,Storable} } .
+
+ var E : Exp .
+ var S : Sys .
+ var Q : Qid .
+
+ op exec : Exp -> Conf .
+ op exec : Sys -> Conf .
+ eq exec (E) = < E ::: 'Exp, init-rec > .
+ eq exec (S) = < S ::: 'Sys, init-rec > .
+endm)

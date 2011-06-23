@@ -1,0 +1,167 @@
+--- This is the BAKERY algorithm implemented using an abstraction of
+--- the state space.  It works for two processes.
+
+--- The implementation is based on the algorithm described in Lynch.
+--- Distributed Algorithms.
+
+--- The abstraction is based on the abstraction described in Meseguer,
+--- Palomino, and Martí-Oliet. Equational Abstractions. In
+--- Proc. Nineteenth International Conference on Automated Deduction,
+--- Springer-Verlag LNCS, 2003. [maude.cs.uiuc.edu/papers/]
+
+(msos BAKERY is
+
+ IntM = (Int, Int) Map .
+
+ --- number of processes (currently the abstraction only works for two
+ --- processes)
+
+ Int ::= nn .
+
+ St .
+ St ::= choosing (Int, Int)
+      | waiting (Int)
+      | rem
+      | crit
+      | try
+      | exit .
+      
+ --- ch = Choosing (indicates that a process is choosing a number)
+ ---  n = Number (the number chosen by the process)
+
+ Label = {ch : IntM, ch' : IntM, n : IntM, n' : IntM, ...} .
+
+ Proc .
+ Proc ::= prc (Int, St) .
+
+ Soup .
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+
+               prc (Int, St) -{...}-> prc (Int, St')
+ -- ---------------------------------------------------------
+ (prc (Int, St) Soup) : Soup -{...}-> (prc (Int, St')) Soup .
+ 
+    IntM' := (Int |-> 1) / IntM
+ -- --------------------------------------------------
+ prc (Int, try) : Proc -{ch = IntM, ch' = IntM', -}->
+                prc (Int, choosing (nn - 1, -1)) .
+
+    (Int1 >= 0), (Int1 =/= Int),
+    (Int2' := lookup (Int1, IntM)),
+    Int3 := if Int2' > Int2 then Int2' else Int2 fi
+ -- -------------------------------------------------------
+ prc (Int, choosing (Int1, Int2)) : Proc
+                -{n = IntM, n' = IntM, -}->
+ prc (Int, choosing (Int1 - 1, Int3)) .
+
+ prc (Int, choosing (Int, Int2)) : Proc -->
+                prc (Int, choosing (Int - 1, Int2)) .
+
+    Int'' := ((Int' + 1) rem 1637617),
+    IntM'1 := (Int |-> 0) / IntM1,
+    IntM'2 := (Int |-> Int'') / IntM2
+ -- ------------------------------------------
+ prc (Int, choosing (-1, Int')) : Proc 
+                -{ch = IntM1, ch' = IntM'1,
+                  n = IntM2, n' = IntM'2, -}-> 
+                prc (Int, waiting (0)) .
+
+ prc (Int, waiting (Int)) : Proc
+                 --> prc (Int, waiting ((Int + 1) rem nn)) .
+
+    Int' =/= Int,
+    (Int1' := lookup (Int', IntM1)),
+    (Int2' := lookup (Int', IntM2)),
+    (Int2  := lookup (Int, IntM2)),
+    St := if Int1' == 0 and
+             (Int2' == 0 or
+              ((Int2 < Int2') or 
+               (Int2 == Int2' and Int < Int')))
+          then crit else waiting ((Int' + 1) rem nn)
+          fi
+ -- --------------------------------------------------
+ prc (Int, waiting (Int')) : Proc
+                -{ch = IntM1, ch' = IntM1,
+                   n = IntM2, n' = IntM2, -}->
+                prc (Int, St) .
+
+    IntM2' := (Int |-> 0) / IntM2
+ -- -------------------------------------------------------------------
+ prc (Int, crit) : Proc -{n = IntM2, n' = IntM2', -}-> prc (Int, rem) .
+
+ prc (Int, rem) : Proc --> prc (Int, try) .
+
+sosm)
+
+(mod CHECK is
+ including BAKERY .
+ including MODEL-CHECKER .
+
+ op initial-conf : -> Conf .
+ op initial-rec : Int -> Record .
+ op initial-soup : Int -> Soup .
+
+ op make-map : Int -> Map{Int,Int} .
+
+ eq nn = 2 .
+
+ vars I I' : Int .
+ var  S : Soup .
+ var  R : Record .
+ var  PR : PreRecord .
+
+ --- this is the abstraction of the state space
+
+ ceq (< S:Soup, { n = (0 |-> 0 +++ 1 |-> I), PR } >)
+   = < S:Soup, { n = (0 |-> 0 +++ 1 |-> 1), PR } >
+ if I > 1 .
+
+ ceq (< S:Soup, { n = (0 |-> I +++ 1 |-> 0), PR } >)
+   = < S:Soup, { n = (0 |-> 1 +++ 1 |-> 0), PR } >
+ if I > 1 .
+
+ ceq (< S:Soup, { n = (0 |-> I +++ 1 |-> I'), PR } >)
+   = < S:Soup, { n = (0 |-> 2 +++ 1 |-> 1), PR } >
+ if (I' < I) /\ not (I' == 1 and I == 2) .
+
+ ceq (< S:Soup, { n = (0 |-> I +++ 1 |-> I'), PR } >)
+   = (< S:Soup, { n = (0 |-> 1 +++ 1 |-> 1), PR } >)
+ if not (I' < I) /\ not (I' == 1 and I == 1) .
+
+ ceq make-map (I) = (I |-> 0) +++ make-map (I - 1) if I > 0 .
+  eq make-map (0) = (0 |-> 0) .
+
+ ceq initial-soup (I) = prc (I, try) initial-soup (I - 1) if I > 0 .
+  eq initial-soup (0) = prc (0, try) .
+
+ eq initial-rec (I) = { ch = (make-map (I)), n = (make-map (I)) } .
+
+ op initial-conf : -> Conf .
+ eq initial-conf = < initial-soup (nn - 1) ::: 'Soup, initial-rec (nn - 1) > .
+
+ subsort Conf < State .
+ op crit : Int -> Prop .
+ 
+ eq (< (prc (I, crit) S) ::: 'Soup, R >) |= crit (I) = true .
+endm)
+
+--- try to see if it finds a race condition
+
+(search [1] initial-conf =>* 
+  < (prc (0, crit) prc (1,crit)) ::: 'Soup, { PR:PreRecord } > .)
+
+--- try to see if process 0 actually enters the critical session
+
+(search [1] initial-conf =>* 
+  < (prc (0, crit) prc (1,St:St)) ::: 'Soup, { PR:PreRecord } > .)
+
+--- try to see if process 1 actually enters the critical session
+
+(search [1] initial-conf =>* 
+  < (prc (1, crit) prc (0,St:St)) ::: 'Soup, { PR:PreRecord } > .)
+
+--- another way of checking for the avoidance of a race condition
+
+(red modelCheck (initial-conf, [] ~ (crit (0) /\ crit (1))) .)

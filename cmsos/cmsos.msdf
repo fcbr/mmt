@@ -1,0 +1,798 @@
+(msos Datum is
+ Datum .
+sosm)
+
+(msos Passable is
+ Passable .
+sosm)
+
+(msos Cons/Op is
+ Op .
+sosm)
+
+(msos Value is
+ Value .
+ Datum ::= Value .
+ Value ::= apply-op (Op, Value*) .
+sosm)
+
+(msos Cons/Exp is
+ Exp .
+ Datum ::= Exp .
+ Exp ::= Value .
+sosm)
+
+(msos Cons/Exp/Boolean is
+ Exp ::= Boolean .
+ Value ::= Boolean .
+sosm)
+
+(msos Cons/Exp/Int is
+ Exp ::= Int .
+ Value ::= Int .
+sosm)
+
+(msos Cons/Prog is
+ Prog .
+sosm)
+
+(msos Cons/Prog/Exp is
+ Prog ::= Exp .
+
+        Exp -{...}-> Exp'
+ -- -----------------------
+ Exp : Prog -{...}-> Exp' .
+sosm)
+
+(msos Cons/Arg is
+ Arg .
+
+ Arg ::= Passable .
+ Datum ::= Arg .
+sosm)
+
+(msos Cons/Arg/Exp is
+ Arg ::= Exp .
+ Passable ::= Value .
+
+    Exp -{...}-> Exp'
+ -- --------------------
+ Exp : Arg -{...}-> Exp' .
+sosm)
+
+(msos Cons/Arg/tup-seq is
+ Arg ::= tup-seq Exp Exp .
+ Passable ::= tup Value Value .
+
+                     Exp1 -{...}-> Exp'1
+ -- ----------------------------------------------------
+ (tup-seq Exp1 Exp2) : Arg -{...}-> tup-seq Exp'1 Exp2 .
+
+                       Exp2 -{...}-> Exp'2
+ -- -------------------------------------------------------
+ (tup-seq Value1 Exp2) : Arg -{...}-> tup-seq Value1 Exp'2 .
+
+ (tup-seq Value1 Value2) : Arg --> tup Value1 Value2 .
+sosm)
+
+(msos Data/Bindable is
+ Bindable .
+ Datum ::= Bindable .
+sosm)
+
+(msos Data/Storable is
+ Storable .
+ Datum ::= Storable .
+sosm)
+
+--- Data/Id only defined the set Id.  Later, Cons/Id redefined the set
+--- Id, and its subset relation Id ::= Bindable.  Since MMT uses the
+--- fact that a set is only defined once, and on a specific module, we
+--- must unify these two modules.
+
+(msos Data/Id is
+ Id .
+ Id ::= Bindable . --- from CONS/ID
+sosm)
+
+(msos Data/Env is
+ Env .
+
+ Env ::= init-env .
+
+ Env = (Id, Bindable) Map .
+sosm)
+
+(msos Data/Cell is
+ Cell .
+ Cell ::= cell (Int) .
+sosm)
+
+(msos Data/Store is
+ Store .
+ Cell ::= new-cell (Store) .
+ Store = (Cell, Storable) Map .
+sosm)
+
+(msos Cons/Id is
+--- Id .
+--- Id ::= Bindable .
+
+ Label = {env : Env, ...} .
+ 
+     Bindable := lookup (Id, Env)
+ -- ---------------------------------
+ Id : Id -{env = Env, -}-> Bindable .
+ 
+ not def lookup (Id, Env), Env' := init-env,
+      Bindable := lookup (Id, Env')
+ -- ----------------------------------------
+      Id : Id -{env = Env, -}-> Bindable .
+sosm)
+
+(msos Cons/Exp/Id is
+
+ Exp ::= Id .
+
+       Id --> Bindable
+ -- --------------------
+ Id : Exp --> Bindable .
+sosm)
+
+(msos Cons/Exp/app-Id is
+
+ Exp ::= app Id Arg .
+
+                 Id --> Id'
+ -- ---------------------------------
+ (app Id Arg) : Exp --> app Id' Arg .
+
+                Arg -{...}-> Arg'
+ -- --------------------------------------
+ (app Id Arg) : Exp -{...}-> app Id Arg' .
+sosm)
+
+(msos Cons/Exp/tup is
+ Exp ::= tup Exp* .
+ Value ::= tup Value* .
+
+                            Exp -{...}-> Exp'
+ -- ------------------------------------------------------------
+ (tup (Exp*, Exp, Exp*')) : Exp -{...}-> tup (Exp*, Exp', Exp*') .
+sosm)
+
+(msos Cons/Exp/tup-seq is
+ Exp ::= tup-seq Exp* .
+ Value ::= tup Value* .
+
+                                 Exp -{...}-> Exp'
+ -- --------------------------------------------------------------------
+ (tup-seq (Value*, Exp, Exp*)) : Exp -{...}-> (tup-seq (Value*, Exp', Exp*)) .
+
+ (tup-seq Value*) : Exp --> tup (Value*) .
+sosm)
+
+(msos Cons/Exp/cond is
+
+ Exp ::= cond Exp Exp Exp .
+ Value ::= Boolean .
+
+                        Exp -{...}-> Exp'
+ -- ------------------------------------------------------
+ (cond Exp Exp1 Exp2) : Exp -{...}-> cond Exp' Exp1 Exp2 .
+
+ (cond tt Exp1 Exp2) : Exp --> Exp1 .
+
+ (cond ff Exp1 Exp2) : Exp --> Exp2 .
+sosm)
+
+(msos Cons/Exp/app-Op is
+
+ Exp ::= app Op Arg .
+ Passable ::= Value .
+ Value ::= tup Value* .
+
+                Arg -{...}-> Arg'
+ -- --------------------------------------
+ (app Op Arg) : Exp -{...}-> app Op Arg' .
+
+         Value' := apply-op (Op, Value*)
+ -- ---------------------------------------
+ (app Op (tup (Value*))) : Exp --> Value' .
+
+sosm)
+
+--- DECLARATIONS
+ 
+(msos Cons/Dec is
+ Dec .
+ Dec ::= Env .
+sosm)
+
+(msos Cons/Prog/Dec is
+ Prog ::= Dec .
+
+        Dec -{...}-> Dec'
+ -- -----------------------
+ Dec : Prog -{...}-> Dec' .
+sosm)
+
+(msos Cons/Dec/bind is
+ Dec ::= bind Id Exp .
+
+                 Exp -{...}-> Exp'
+ -- ------------------------------------------
+ (bind Id Exp) : Dec -{...}-> (bind Id Exp') .
+
+ --- if Value :: Bindable
+ (bind Id Value) : Dec --> Id |-> Value .
+sosm)
+
+(msos Cons/Exp/local is
+ Exp ::= local Dec Exp .
+ 
+ Label = { env : Env, ...} .
+
+                   Dec -{...}-> Dec'
+ -- ---------------------------------------------
+ (local Dec Exp) : Exp -{...}-> local Dec' Exp .
+
+    Env' := (Env / Env0),
+                   Exp -{env = Env', ...}-> Exp'
+ -- --------------------------------------------------------
+ (local Env Exp) : Exp -{env = Env0, ...}-> local Env Exp' .
+
+ (local Env Value) : Exp --> Value .
+sosm)
+
+(msos Cons/Dec/local is
+ Dec ::= local Dec Dec .
+ 
+ Label = {env : Env, ...} .
+
+                    Dec1 -{...}-> Dec'1
+ -- --------------------------------------
+ (local Dec1 Dec2) : Dec -{...}-> local Dec'1 Dec2 .
+
+   Env' := Env1 / Env0,
+                    Dec2 -{env = Env', ...}-> Dec'2
+ -- ------------------------------------------------------------
+ (local Env1 Dec2) : Dec -{env = Env0, ...}-> local Env1 Dec'2 .
+
+ (local Env1 Env2) : Dec --> Env2 .
+sosm)
+
+(msos Cons/Dec/accum is
+ Dec ::= accum Dec Dec .
+
+ Label = {env : Env,...} .
+
+                    Dec1 -{...}-> Dec'1
+ -- ------------------------------------------------
+ (accum Dec1 Dec2) : Dec -{...}-> accum Dec'1 Dec2 .
+
+    Env' := (Env1 / Env0),
+                    Dec2 -{env = Env', ...}-> Dec'2
+ -- ------------------------------------------------------------
+ (accum Env1 Dec2) : Dec -{env = Env0, ...}-> accum Env1 Dec'2 .
+
+         Env := (Env2 / Env1)
+ -- ------------------------------
+ (accum Env1 Env2) : Dec --> Env .
+sosm)
+
+(msos Cons/Dec/simult is
+ Dec ::= simult Dec Dec .
+
+                     Dec1 -{...}-> Dec'1
+ -- --------------------------------------------------
+ (simult Dec1 Dec2) : Dec -{...}-> simult Dec'1 Dec2 .
+
+                     Dec2 -{...}-> Dec'2
+ -- --------------------------------------------------
+ (simult Dec1 Dec2) : Dec -{...}-> simult Dec1 Dec'2 .
+
+       Env := (Env1 +++ Env2)
+ -- -------------------------------
+ (simult Env1 Env2) : Dec --> Env .
+sosm)
+
+(msos Cons/Dec/simult-seq is
+ Dec ::= simult-seq Dec Dec .
+
+                         Dec1 -{...}-> Dec'1
+ -- ----------------------------------------------------------
+ (simult-seq Dec1 Dec2) : Dec -{...}-> simult-seq Dec'1 Dec2 .
+
+                         Dec2 -{...}-> Dec'2
+ -- -----------------------------------------------------------
+ (simult-seq Env1 Dec2) : Dec -{...}-> simult-seq Env1 Dec'2  .
+
+          Env := (Env1 +++ Env2)
+ -- -----------------------------------
+ (simult-seq Env1 Env2) : Dec --> Env .
+sosm)
+
+--- COMMANDS
+
+(msos Cons/Cmd is
+ Cmd .
+ Cmd ::= skip .
+sosm)
+
+(msos Cons/Cmd/print is
+ Cmd ::= print Exp .
+ Label = { out' : Value*, ... } .
+
+            Exp -{...}-> Exp'
+ -- ------------------------------------
+ (print Exp) : Cmd -{...}-> print Exp' .
+
+ (print Value) : Cmd -{ out' = Value,-}-> skip .
+sosm)
+
+(msos Cons/Cmd/seq is
+ Cmd ::= seq Cmd Cmd .
+
+                  Cmd1 -{...}-> Cmd'1
+ -- --------------------------------------------
+ (seq Cmd1 Cmd2) : Cmd -{...}-> seq Cmd'1 Cmd2 .
+
+ (seq skip Cmd2) : Cmd --> Cmd2 .
+sosm)
+
+(msos Cons/Cmd/seq-n is
+ Cmd ::= seq Cmd+ .
+
+                     Cmd -{...}-> Cmd'
+ -- ------------------------------------------------
+ (seq (Cmd, Cmd*)) : Cmd -{...}-> (seq (Cmd', Cmd*)) .
+
+ (seq (skip, Cmd+)) : Cmd --> (seq Cmd+) .
+
+ (seq skip) : Cmd --> skip .
+sosm)
+
+(msos Cons/Cmd/effect is
+ Cmd ::= effect Exp .
+
+              Exp -{...}-> Exp'
+ -- --------------------------------------
+ (effect Exp) : Cmd -{...}-> effect Exp' .
+
+ (effect Value) : Cmd --> skip .
+sosm)
+
+(msos Cons/Exp/seq-Cmd-Exp is
+ Exp ::= seq Cmd Exp .
+
+                 Cmd -{...}-> Cmd'
+ -- ----------------------------------------
+ (seq Cmd Exp) : Exp -{...}-> seq Cmd' Exp .
+
+ (seq skip Exp) : Exp --> Exp .
+sosm)
+
+(msos Cons/Exp/seq-Exp-Cmd is
+ Exp ::= seq Exp Cmd .
+
+                 Exp -{...}-> Exp'
+ -- ----------------------------------------
+ (seq Exp Cmd) : Exp -{...}-> seq Exp' Cmd .
+
+                   Cmd -{...}-> Cmd'
+ -- --------------------------------------------
+ (seq Value Cmd) : Exp -{...}-> seq Value Cmd' .
+
+ (seq Value skip) : Exp --> Value .
+sosm)
+
+(msos Cons/Cmd/cond is
+ Cmd ::= cond Exp Cmd Cmd .
+ Value ::= Boolean .
+
+                        Exp -{...}-> Exp'
+ -- ------------------------------------------------------
+ (cond Exp Cmd1 Cmd2) : Cmd -{...}-> cond Exp' Cmd1 Cmd2 .
+
+ (cond tt Cmd1 Cmd2) : Cmd --> Cmd1 .
+
+ (cond ff Cmd1 Cmd2) : Cmd --> Cmd2 .
+sosm)
+
+(msos Cons/Cmd/while is
+ see Cons/Cmd/cond, Cons/Cmd/seq .
+
+ Cmd ::= while Exp Cmd .
+
+ (while Exp Cmd) : Cmd --> cond Exp (seq Cmd (while Exp Cmd)) skip .
+sosm) 
+
+(msos Cons/Var is
+ Var .
+ Var ::= Cell .
+sosm)
+
+(msos Cons/Exp/Var is
+ Exp ::= Var .
+ Label = {store : Store, store' : Store, ...} .
+
+    Var -{...}-> Var'
+ -- ----------------------
+ Var : Exp -{...}-> Var' .
+
+               Value := lookup(Cell, Store)
+ -- ----------------------------------------------------
+ Cell : Exp -{store = Store, store' = Store,-}-> Value .
+sosm)
+
+(msos Cons/Var/Id is
+ Var ::= Id .
+ Bindable ::= Cell .
+
+ Label = {env : Env, ...} .
+
+      Cell := lookup (Id, Env)
+ -- -----------------------------
+ Id : Var -{env = Env,-}-> Cell .
+sosm)
+
+(msos Cons/Var/deref is
+ Var ::= deref Exp .
+ Value ::= ref Cell .
+
+               Exp -{...}-> Exp'
+ -- ------------------------------------
+ (deref Exp) : Var -{...}-> deref Exp' .
+
+ (deref (ref Cell)) : Var --> Cell .
+sosm)
+
+(msos Cons/Var/alloc is
+ Var ::= alloc Exp .
+
+ Label = {store : Store, store' : Store, ...} .
+
+               Exp -{...}-> Exp'
+ -- ------------------------------------
+ (alloc Exp) : Var -{...}-> alloc Exp' .
+
+    Cell := new-cell (Store), 
+        Store' := (Cell |-> Storable) / Store
+ -- -----------------------------------------
+ (alloc Storable) : Var -{store = Store, 
+                          store' = Store',-}-> Cell .
+sosm)
+
+(msos Cons/Exp/assign-seq is
+ Exp ::= assign-seq Var Exp .
+
+ Label = {store : Store, store' : Store, ...} .
+
+                        Var -{...}-> Var'
+ -- ------------------------------------------------------
+ (assign-seq Var Exp) : Exp -{...}-> assign-seq Var' Exp .
+
+                       Exp -{...}-> Exp'
+ -- --------------------------------------------------------
+ (assign-seq Cell Exp) : Exp -{...}-> assign-seq Cell Exp' .
+
+ def lookup(Cell, Store), Store' :=  (Cell |-> Storable) / Store
+ -- ---------------------------------------------------------------
+ (assign-seq Cell Storable) : Exp -{store = Store,
+                                    store' = Store',-}-> Storable .
+sosm)
+
+(msos Cons/Exp/ref is
+ Exp ::= ref Var .
+ Value ::= ref Cell .
+
+             Var -{...}-> Var'
+ -- --------------------------------
+ (ref Var) : Exp -{...}-> ref Var' .
+sosm)
+
+(msos Cons/Exp/assigned is
+ Exp ::= assigned Var .
+ Label = {store : Store, store' : Store, ...} .
+
+                  Var -{...}-> Var'
+ -- ------------------------------------------
+ (assigned Var) : Exp -{...}-> assigned Var' .
+
+    Storable := lookup (Cell ,Store)
+ -- ---------------------------------------------
+ (assigned Cell) : Exp -{store = Store,
+                         store' = Store,-}-> Storable .
+sosm)
+
+(msos Cons/Abs is
+ Abs .
+sosm)
+
+(msos Cons/Par is
+ Par .
+sosm)
+
+(msos Cons/Exp/Abs is
+ Exp ::= Abs .
+ Value ::= Abs .
+sosm)
+
+(msos Cons/Dec/app is
+ Dec ::= app Par Arg .
+
+                 Arg -{...}-> Arg'
+ -- ------------------------------------------
+ (app Par Arg) : Dec -{...}-> (app Par Arg') .
+sosm)
+
+(msos Cons/Par/bind is
+ see Cons/Dec/app .
+
+ Par ::= bind Id .
+
+ (app (bind Id) Bindable) : Dec --> (Id |-> Bindable) .
+sosm)
+
+(msos Cons/Par/tup is
+ see Cons/Dec/app, Cons/Dec/simult .
+ --- adicionei isto.
+ see Cons/Exp/tup .
+
+ Par ::= tup Par* .
+ 
+ (app (tup(Par, Par*)) (tup (Bindable, Bindable*))) : Dec -->
+    (simult (app Par Bindable)
+            (app (tup(Par*)) (tup(Bindable*)))) .
+ 
+ (app (tup ()) (tup ())) : Dec --> void .
+sosm)
+
+(msos Cons/Exp/app is
+ Exp ::= app Exp Arg .
+
+                 Exp -{...}-> Exp'
+ -- ------------------------------------------
+ (app Exp Arg) : Exp -{...}-> (app Exp' Arg) .
+ 
+                 Arg -{...}-> Arg'
+ -- ------------------------------------------
+ (app Exp Arg) : Exp -{...}-> (app Exp Arg') .
+sosm)
+
+(msos Cons/Exp/app-seq is
+ see Cons/Exp/app .
+
+ Exp ::= app-seq Exp Arg .
+
+                     Exp -{...}-> Exp'
+ -- --------------------------------------------------
+ (app-seq Exp Arg) : Exp -{...}-> (app-seq Exp' Arg) .
+
+                       Arg -{...}-> Arg'
+ -- ------------------------------------------------------
+ (app-seq Value Arg) : Exp -{...}-> (app-seq Value Arg') .
+
+ (app-seq Value Passable) : Exp --> (app Value Passable) .
+sosm)
+
+(msos Cons/Abs/closure is
+ --- mudei de Dec/local para Exp/local ????
+ see Cons/Exp/local, Cons/Abs .
+ --- acrescentei isso
+ see Cons/Exp/app, Cons/Exp/Abs .
+
+ Abs ::= closure Dec Abs .
+
+ (app (closure Dec Abs) Passable) : Exp --> (local Dec (app Abs Passable)) .
+sosm)
+
+(msos Cons/Exp/close is
+ see Cons/Abs/closure .
+
+ Exp ::= close Abs .
+ 
+ Label = {env : Env, ...} .
+ 
+ (close Abs) : Exp -{env = Env,-}-> (closure Env Abs) .
+sosm)
+
+(msos Cons/Abs/abs-Exp is
+ --- mudei de dec/local para exp/local
+ see Cons/Exp/local, Cons/Dec/app .
+ --- acrescentei isso
+ see Cons/Exp/Abs, Cons/Exp/app .
+
+ Abs ::= abs Par Exp .
+
+ (app (abs Par Exp) Passable) : Exp --> (local (app Par Passable) Exp) .
+sosm)
+
+(msos Cons/Dec/rec is
+ see Cons/Dec/bind, Cons/Dec/simult, 
+     Cons/Dec/simult-seq, Cons/Exp/close,
+     Cons/Abs/closure .
+
+ Dec ::= rec Dec .
+ Dec ::= reclose Dec Dec .
+ 
+ (rec Dec) : Dec --> (reclose (rec Dec) Dec) .
+ 
+ (reclose (rec Dec) (bind Id (close Abs))) : Dec -->
+          (bind Id (close (closure (rec Dec) Abs))) .
+ 
+ (reclose (rec Dec) (simult-seq Dec1 Dec2)) : Dec -->
+          (simult-seq (reclose (rec Dec) Dec1) (reclose (rec Dec) Dec2)) .
+ 
+ (reclose (rec Dec) (simult Dec1 Dec2)) : Dec -->
+          (simult (reclose (rec Dec) Dec1) (reclose (rec Dec) Dec2)) .
+sosm)
+
+(msos Cons/Sys is
+ Sys .
+sosm)
+
+(msos Cons/Sys/conc is
+ Sys ::= conc Sys Sys .
+
+                   Sys1 -{...}-> Sys1'
+ -- ------------------------------------------------
+ (conc Sys1 Sys2) : Sys -{...}-> (conc Sys1' Sys2) .
+
+                   Sys2 -{...}-> Sys2'
+ -- ------------------------------------------------
+ (conc Sys1 Sys2) : Sys -{...}-> (conc Sys1 Sys2') .
+sosm)
+
+(msos Cons/Cmd/start is
+ Cmd ::= start Exp .
+
+ Label = {starting' : Abs*, ...} .
+
+ Value ::= Abs .
+
+               Exp -{...}-> Exp'
+ -- --------------------------------------
+ (start Exp) : Cmd -{...}-> (start Exp') .
+
+ (start Abs) : Cmd -{starting' = Abs,-}-> skip .
+sosm)
+
+(msos Cons/Sys/Cmd is
+ see Cons/Sys/conc, Cons/Cmd/effect, 
+     Cons/Exp/Abs, 
+     Cons/Exp/app, Cons/Exp/tup .
+
+ Sys ::= Cmd .
+ Sys ::= skip .
+
+ Label = {starting' : Abs*, ...} .
+
+      Cmd -{starting' = Abs, ...}-> Cmd'
+-- --------------------------------------
+Cmd : Sys -{starting' = (), ...}->
+    (conc Cmd' effect (app Abs (tup ()))) .
+
+     Cmd -{starting' = (), ...}-> Cmd'
+ -- --------------------------------------
+ Cmd : Sys -{starting' = (), ...}-> Cmd' .
+
+ (conc skip Sys) : Sys --> Sys .
+
+ (conc Sys skip) : Sys --> Sys .
+sosm)
+
+(msos Data/Chan is
+ Chan .
+ Chan ::= chan Int .
+sosm)
+
+(msos Data/Chans is
+ Chans .
+ Chans = (Chan) Set .
+sosm)
+
+(msos Cons/Exp/alloc-chan is
+ Exp ::= alloc-chan .
+
+ Label = {chans : Chans, chans' : Chans, ...} .
+
+ Value ::= Chan .
+ Chan ::= new-chan (Chans) .
+
+ Chan := new-chan (Chans), Chans' := Chans + { Chan }
+ -- -----------------------------------------------------------
+ alloc-chan : Exp -{chans = Chans, chans' = Chans', -}-> Chan .
+
+sosm)
+
+(msos Data/Event is
+ Event .
+sosm)
+
+(msos Cons/Sys/quiet is
+ see Cons/Sys/Cmd .
+
+ Sys ::= quiet Sys .
+
+ Label = {event' : Event*, ...} .
+
+---(
+XXX: This is the only rule where we deviate from MSDF entirely.
+Instead of writing event' = () below, we have to rewrite the
+rule as it is written to deal with a ambiguity complained by
+Maude.  This might be voidable.
+
+event' = (()).Seq`(Abs`)
+-versus-
+event' = (()).Seq`(Chans`)
+)
+
+    Event* := (), Sys -{event' = Event*, ...}-> Sys'
+ -- --------------------------------------------
+ (quiet Sys) : Sys -{event' = Event*, ...}-> (quiet Sys') .
+
+ (quiet skip) : Sys --> skip .
+sosm)
+
+(msos Cons/Cmd/send-chan-seq is
+ Cmd ::= send-chan-seq Exp Exp .
+
+ Label = {event' : Event*, ...} .
+
+ Event ::= sending Chan Value .
+
+ Value ::= Chan .
+
+                            Exp1 -{...}-> Exp1'
+ -- ------------------------------------------------------------------
+ (send-chan-seq Exp1 Exp2) : Cmd -{...}-> (send-chan-seq Exp1' Exp2) .
+
+                            Exp2 -{...}-> Exp2'
+ -- ------------------------------------------------------------------
+ (send-chan-seq Chan Exp2) : Cmd -{...}-> (send-chan-seq Chan Exp2') .
+
+ (send-chan-seq Chan Value) : Cmd -{event' = 
+                                      (sending Chan Value),-}-> skip .
+sosm)
+
+(msos Cons/Exp/recv-chan is
+ Exp ::= recv-chan Exp .
+
+ Label = {event' : Event*, ...} .
+
+ Event ::= receiving Chan .
+
+ Value ::= ph Chan | Chan .
+
+                   Exp -{...}-> Exp'
+ -- ----------------------------------------------
+ (recv-chan Exp) : Exp -{...}-> (recv-chan Exp') .
+
+ (recv-chan Chan) : Exp -{event' = (receiving Chan),-}-> 
+                                 (ph Chan) .
+sosm)
+
+(msos Cons/Sys/conc-chan is
+ Sys ::= conc Sys Sys .
+
+ Sys ::= update-ph (Sys, Chan, Value) .
+
+ Label = {event' : Event*, ...} .
+
+ Event ::= sending Chan Value 
+         | receiving Chan .
+
+ Sys1 -{event' = (sending Chan Value),-}-> Sys1',
+        Sys2 -{event' = (receiving Chan),-}-> Sys2'
+ -- -----------------------------------------------
+ (conc Sys1 Sys2) : Sys -{event' = (),-}-> 
+      (conc Sys1' update-ph (Sys2', Chan, Value)) .
+
+ Sys2 -{event' = (sending Chan Value),-}-> Sys2',
+         Sys1 -{event' = (receiving Chan),-}-> Sys1'
+ -- ------------------------------------------------
+ (conc Sys1 Sys2) : Sys -{event' = (),-}-> 
+       (conc update-ph (Sys1', Chan, Value) Sys2') .
+sosm)

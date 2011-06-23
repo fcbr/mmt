@@ -1,0 +1,95 @@
+(msos PROCESS is
+
+ Proc .
+ Soup .
+
+ St .
+ St ::= crit | rem .
+
+ Proc ::= prc (Int, St) .
+
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+               Proc -{...}-> Proc'
+ -- -------------------------------------
+ (Proc Soup) : Soup -{...}-> Proc' Soup .
+
+         Proc -{...}-> Proc'
+ -- --------------------------
+  Proc : Soup -{...}-> Proc' .
+sosm)
+
+(msos CRITICAL-ZONE+SEMAPHORE is
+ see PROCESS .
+
+ Label = {sem : Int, sem' : Int, ...} .
+
+ St ::= down | up .
+
+ prc (Int, rem) : Proc --> prc (Int, down) .
+
+    Int'' := Int' + 1
+ -- ------------------------------------------------------
+ prc (Int, up) : Proc -{sem = Int', sem' = Int'', -}-> 
+ prc (Int, rem) .
+
+    Int' == 0
+ -- ------------------------------------------------------
+ prc (Int, down) : Proc -{sem = Int', sem' = Int', -}->
+ prc (Int, down) .
+
+    Int' > 0, Int'' := (Int' - 1)
+ -- ---------------------------------------------------------
+ prc (Int, down) : Proc -{sem = Int', sem' = Int'', -}-> 
+ prc (Int, crit) .
+
+ prc (Int, crit) : Proc --> prc (Int, up) .
+sosm)
+
+--- Race condition will never be found.
+(search 
+  (< (prc (0, rem) prc (1, rem)) ::: 'Soup, { sem = 1 } >) =>* 
+  (< (prc (0, crit) prc (1, crit)) ::: 'Soup, R:Record >) .)
+
+(mod CHECK is
+ including CRITICAL-ZONE+SEMAPHORE .
+ including MODEL-CHECKER .
+
+ op create-prcs : Int -> Soup .
+
+ vars I I' : Int .
+ var  R : Record .
+ var  S : Soup .
+
+ ceq create-prcs (I) = prc (I, rem) create-prcs (_-_(I, 1)) if I > 1 .
+ eq create-prcs (1) = prc (1, rem) .
+
+ --- CREATE-CONF creates a configuration with Int processes on the soup.
+
+ op create-conf : Int -> Conf .
+ eq create-conf (I) = 
+    < create-prcs (I) ::: 'Soup,  { sem = 1 } > .
+
+ subsort Conf < State .
+
+ --- TRUE when there is a race condition on the soup (two processes on
+ --- their CRIT state)
+
+ op race-condition : -> Prop .
+ eq (< (prc (I, crit) prc (I', crit) S) ::: 'Soup, R >)
+    |= race-condition = true .
+
+ --- TRUE when process Int is in its CRIT state
+
+ op in-crit : Int -> Prop .
+ eq (< (prc (I, crit) S) ::: 'Soup, R >)
+    |= in-crit (I) = true .
+endm)
+
+--- Verify that there isn't a race condition on a configuration with
+--- 10 processes.
+(red modelCheck (create-conf (10), [] ~ race-condition) .)
+
+--- This check should fail, since the specification is not fair.
+(red modelCheck (create-conf (3), <> in-crit (1)) .)

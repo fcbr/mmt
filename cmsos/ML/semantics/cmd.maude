@@ -1,0 +1,22 @@
+load dec
+
+(msos Lang/ML/Cmd is
+ see Lang/ML/Dec .
+
+ see Cons/Cmd, Cons/Cmd/seq-n, Cons/Cmd/effect, Cons/Cmd/while .
+ 
+ see Cons/Exp, Cons/Exp/seq-Cmd-Exp, Cons/Exp/seq-Exp-Cmd,
+     Cons/Exp/assign-seq, Cons/Exp/ref, Cons/Exp/assigned .
+
+ see Cons/Var, Cons/Var/alloc, Cons/Var/deref .
+
+ Storable ::= Value .
+sosm)
+
+(mod Lang/ML/Cmd' is
+ including Lang/ML/Cmd .
+
+ var Store : Store .
+ eq new-cell (Store) = cell (length (Store) + 1) .
+endm)
+

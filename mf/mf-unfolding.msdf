@@ -1,0 +1,233 @@
+--- The Modular Operational Semantics of Mini-Freja.  Based on the
+--- Structural Operational Semantics of Mini-Freja by Pieter Hartel,
+--- which is based on Petersson's SOS for MiniFreja.
+
+(msos MF-ABSYN is
+ Var .
+
+ Primu .
+
+ Primu ::= not | neg .
+
+ Primd .
+ Primd ::= lt | le | eq | ne | ge | gt | and | or | plus | minus | times | div | mod .
+
+ Const .
+ Const ::= Int | Boolean | nil .
+
+ Pat .
+ Pat ::= Pat :: Pat [assoc] .
+ Pat ::= p Const | p Var .
+
+ Rule .  Rules .
+ Dec  .  Decls .
+
+ Exp .
+ Exp ::= Exp :: Exp [assoc] .
+ Exp ::= fn Var => Exp
+       | Primu Exp
+       | Exp Primd Exp
+       | if Exp then Exp else Exp
+       | Exp Exp
+       | case Exp of Rules
+       | rec Decls in Exp
+       | Var
+       | Const .
+
+ Rule ::= Pat => Exp .
+
+ Rules ::= Rule .
+ Rules ::= Rules || Rules [assoc] .
+
+ Dec ::= Var is Exp .
+ Dec ::= fun Var = Exp .
+
+ Decls ::= Dec .
+ Decls ::= Decls Decls [assoc] .
+
+sosm)
+
+(msos MF-EVAL is
+ Value .
+ Env = (Var, Value) Map .
+
+ Decls ::= dec (Env) .
+
+ Exp ::= Value | force Exp .
+
+ Value ::= susp (Env, Exp)
+         | clo (Env, Var, Exp)
+         | fix (Var, Exp)
+         | Const .
+
+ Value ::= cons (Value, Value) [assoc] .
+
+ Label = { env : Env, ... } .
+
+ (Int1 plus Int2) : Exp ==> (Int1 + Int2) .
+ (Int1 times Int2) : Exp ==> (Int1 * Int2) .
+ (Int1 mod Int2) : Exp ==> (Int1 rem Int2) .
+ (Int1 minus Int2) : Exp ==> _-_(Int1, Int2) .
+
+ (Int1 eq Int2) : Exp ==> if (Int1 == Int2) then tt else ff fi .
+ (Int1 ne Int2) : Exp ==> if (Int1 == Int2) then ff else tt fi .
+
+            (Exp1 ==> Value1), (Exp2 ==> Value2),
+                (Value1 Primd Value2 ==> Value3)
+ [prim-app] -- ---------------------------------
+            (Exp1 Primd Exp2) : Exp ==> Value3 .
+
+ Const : Exp ==> Const .
+
+ [force-const] force Const : Exp ==> Const .
+ [force-clo] force clo (Env, Var, Exp) : Exp ==> clo (Env, Var, Exp) .
+ [force-fix] force fix (Var, Exp) : Exp ==> fix (Var, Exp) .
+
+ [force] force cons (Value1, Value2) : Exp ==> cons (Value1, Value2) .
+
+         Exp ={env = Env', -}=> Value,
+                      force Value ={env = Env, -}=> Value'
+ [force] -- ----------------------------------------------
+         force susp (Env', Exp) : Exp ={env = Env, -}=> Value' .
+
+          Value := lookup (Var, Env),
+          (force Value ={env = Env, ...}=> Value')
+ [lookup] -- -----------------------------------
+          Var : Exp ={env = Env, ...}=> Value' .
+
+ [clo] (fn Var => Exp) : Exp ={env = Env, -}=> clo (Env, Var, Exp) .
+ 
+       Exp1 ={env = Env, -}=> fix (Var, Exp1'),
+        force Exp1' ={env = Env, -}=> clo (Env1, Var1, Exp'),
+         Env2 := (Var1 |-> susp (Env, Exp2)) / Env1,
+          Env2' := (Var |-> fix (Var, Exp1')) / Env2,
+           Exp' ={env = Env2', -}=> Value
+ [app] -- -------------------------------------------
+       (Exp1 Exp2) : Exp ={env = Env, -}=> Value .
+
+       Exp1 ={env = Env, -}=> clo (Env1, Var1, Exp'),
+        Env2 := (Var1 |-> susp (Env, Exp2)) / Env1,
+         Exp' ={env = Env2, -}=> Value
+ [app] -- -------------------------------------------
+       (Exp1 Exp2) : Exp ={env = Env, -}=> Value .
+
+ Exp ::= if-choose (Value, Exp2, Exp3) .
+ 
+ [if-choose-tt] if-choose (tt, Exp2, Exp3) : Exp ==> Exp2 .
+
+ [if-choose-ff] if-choose (ff, Exp2, Exp3) : Exp ==> Exp3 .
+
+      (Exp1 ==> Value),
+      (if-choose (Value, Exp2, Exp3) ==> Exp),
+      (Exp ==> Value')
+ [if] -- ---------------------------------------------
+      if Exp1 then Exp2 else Exp3 : Exp ==> Value' .
+
+ [cons] (Exp1 :: Exp2) : Exp ={env = Env, -}=> cons (susp (Env, Exp1), susp (Env, Exp2)) .
+
+          Dec ={env = Env, -}=> dec (Env'),
+          Env'' := Env' / Env, Decls ={env = Env'', -}=> dec(Env''')
+ [decls]  -- -------------------------------------------------------------
+          (Dec Decls) : Decls ={env = Env, -}=> dec (Env' +++ Env''') .
+     
+               Dec ==> dec (Env')
+  [decls] -- -------------------------
+          Dec : Decls ==> dec (Env') .
+      
+ [dec] (Var is Exp) : Dec ={env = Env, -}=> dec (Var |-> susp (Env, Exp)) .
+
+ [dec] (fun Var = Exp) : Dec ={env = Env, -}=> dec (Var |-> fix (Var, susp (Env, Exp))) .
+ 
+         Decls ={env = Env, -}=> dec (Env'),
+         Env'' := Env' / Env, Exp ={env = Env'', -}=> Value
+ [rec] -- --------------------------------------------------
+         (rec Decls in Exp) : Exp ={env = Env, -}=> Value .
+
+ Value ::= case (Value, Rules) .
+
+        Exp ==> Value,
+              case (Value, Rules) ==> Value'
+ [case] -- ---------------------------------
+        case Exp of Rules : Exp ==> Value' .
+
+ Match .
+ Match ::= match (Value, Pat) 
+        | match-pair (Match, Value, Pat)
+        | myes (Env)
+        | mno .
+
+              Env'' := Env' / Env, match (Value, Pat) ={env = Env'', -}=> Match
+ [match-pair] -- -------------------------------------------------------------------
+              match-pair (myes (Env'), Value, Pat) : Match ={env = Env, -}=> Match .
+
+ [match-pair] match-pair (mno, Value, Pat) : Match ==> mno .
+
+                   match (Value1, Pat1) ==> Match1,
+                                       match-pair (Match1, Value2, Pat2) ==> Match2
+ [match-cons-cons] -- -------------------------------------------------------------
+                   match (cons (Value1, Value2), Pat1 :: Pat2) : Match ==> Match2 .
+
+ [match-const-cons] match (Const, Pat1 :: Pat2) : Match ==> mno .
+
+ [match-cons-const] match (cons (Value1, Value2), p Const) : Match ==> mno .
+
+ [match-var] match (Value, p Var) : Match ={env = Env, -}=> myes (Var |-> Value / Env) .
+
+                     Match := if Const1 == Const2 then myes (Env) else mno fi
+ [match-const-const] -- -------------------------------------------------------
+                     match (Const1, p Const2) : Match ={env = Env, -}=> Match .
+
+ Value ::= case-choose (Match, Exp, Value, Rules) .
+
+               Env'' := Env' / Env, Exp ={env = Env'', -}=> Value'
+ [case-choose] -- ---------------------------------------------------------------------------
+               case-choose (myes(Env'), Exp, Value, Rules) : Value ={env = Env, -}=> Value' .
+
+               case (Value, Rules) ==> Value'
+ [case-choose] -- ---------------------------------------------------------
+               case-choose (mno, Exp, Value, Rules) : Value ==> Value' .
+
+        match (Value, Pat) ==> Match,
+                 case-choose (Match, Exp, Value, Rules) ==> Value' 
+ [case] -- -------------------------------------------------------
+        case (Value, ((Pat => Exp) || Rules)) : Value ==> Value' .
+
+        match (Value, Pat) ={env = Env, -}=> myes(Env'), 
+                Env'' := Env' / Env, Exp ={env = Env'', -}=> Value'
+ [case] -- --------------------------------------------------------
+        case (Value, Pat => Exp) : Value ={env = Env, -}=> Value' .
+
+ Value ::= strict Value .
+
+ [strict-const] strict Const : Value ==> Const .
+
+ [strict-clo] strict clo (Env, Var, Exp) : Value ==> clo (Env, Var, Exp) .
+
+ [strict-fix] strict fix (Var, Exp) : Value ==> fix (Var, Exp) .
+
+                    strict Value1 ==> Value1', strict Value2 ==> Value2'
+ [strict-cons] -- ---------------------------------------------------------------
+               strict cons (Value1, Value2) : Value ==> cons (Value1', Value2') .
+
+               Exp ={env = Env', -}=> Value,
+                                    strict Value ={env = Env, -}=> Value'
+ [strict-susp] -- -------------------------------------------------------
+               strict susp (Env', Exp) : Value ={env = Env, -}=> Value' .
+
+ Value ::= exec Exp | done Value .
+
+        Exp ==> Value,
+                 strict Value ==> Value'
+ [exec] -- -----------------------------
+        exec Exp : Exp ==> done Value' .
+
+sosm)
+
+(mod MF-EVAL' is
+ including MF-EVAL .
+
+ op init-env : -> Env .
+ eq init-env = void .
+ op init-rec : -> Record .
+ eq init-rec = { env = init-env } .
+endm)

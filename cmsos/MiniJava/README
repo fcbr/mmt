@@ -1,0 +1,36 @@
+This is an compiler for MiniJava programs.  The MiniJava language is
+based on the one described in Appel's book, `Modern Compiler
+Implementation in Java' (Cambridge University Press, 1998).
+
+Unlike Appel's MiniJava, this dialect does not support class
+inheritance.  Only simple classes and objects are supported.  Also,
+currently, the only primitive type is the integer (int).  Fields are
+assumed to be private only.
+
+The original inspiration on how to deal with objects came from Reynold's
+book `Theories of Programming Languages' (Cambridge University Press,
+1998).
+
+The actual implementation of objects is based on ideas described in
+Thorup and Tofte's paper: `Object-Oriented Programming and Standard ML'
+(1994 ACM SIGPLAN Workshop on ML and its Applications. John H. Reppy,
+editor).
+
+In order to compile the MiniJava parser, you will need:
+
+- SableCC version 3-beta.2 (it does not work with beta.3)
+- a Java compiler.  I tested it with JDK 1.5, JDK 1.4, GCJ 3.0 and
+  Kaffe.
+
+You don't have to regenerate and recompile everything; just use the
+`mjc.jar' with the `mjc.sh' script. It was compiled with a JDK 1.2 as a
+target.  Please set the $JAVA environment variable to your Java Virtual
+Machine loader program (e.g., 'java' or 'kaffe-java').
+
+In order to run an example, pass it through the MiniJava compiler,
+then run it under MMT. The following command-line assumes you have
+defined the 'mmt' alias properly. It also considers you are positioned
+in the 'MiniJava' directory.
+
+$ cat examples/Factorial.java | ./mjc.sh > Factorial.java.msdf
+$ maude mmt.maude  ../cmsos.msdf maude/MiniJava.msdf examples/Factorial.java.msdf

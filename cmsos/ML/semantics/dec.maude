@@ -1,0 +1,12 @@
+in exp
+
+(msos Lang/ML/Dec is
+ see Lang/ML/Exp' .
+
+ see Cons/Prog, Cons/Prog/Dec .
+
+ see Cons/Dec, Cons/Dec/bind, Cons/Dec/simult-seq, 
+     Cons/Dec/accum, Cons/Dec/local .
+
+ see Cons/Exp, Cons/Exp/local .
+sosm)

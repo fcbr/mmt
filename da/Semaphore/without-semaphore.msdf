@@ -1,0 +1,35 @@
+(msos PROCESS is
+
+ Proc .
+ Soup .
+
+ St .
+ St ::= crit | rem .
+
+ Proc ::= prc (Int, St) .
+
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+               Proc -{...}-> Proc'
+ -- -------------------------------------
+ (Proc Soup) : Soup -{...}-> Proc' Soup .
+
+         Proc -{...}-> Proc'
+ -- --------------------------
+  Proc : Soup -{...}-> Proc' .
+sosm)
+
+(msos CRITICAL-ZONE is
+ see PROCESS .
+
+ prc (Int, rem) : Proc --> prc (Int, crit) .
+ prc (Int, crit) : Proc --> prc (Int, rem) .
+
+sosm)
+
+--- List all possible interactions.  A race condition will be found
+--- (both processes in state crit)
+
+(search 
+  (< (prc (0, rem) prc (1, rem)) ::: 'Soup, { null } >) =>* C:Conf .)

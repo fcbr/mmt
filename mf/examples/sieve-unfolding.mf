@@ -1,0 +1,67 @@
+(mod PRIMES is
+ including MF-EVAL' .
+
+ ops fat n n0 xs0 x y xs pp N filter not-div sieve take from primes : -> Var .
+
+ op filterd : -> Dec .
+ op fromd : -> Dec .
+ op taked : -> Dec .
+ op not-divd : -> Dec .
+ op sieved : -> Dec .
+ op primesd : -> Dec .
+ op fatd : -> Dec .
+
+ eq filterd = fun filter = fn pp => fn xs0 => 
+                case xs0 of
+                   (p nil => nil)
+                || (p x :: p xs) => if (pp x) then 
+                                      (x :: ((filter pp) xs))
+                                    else 
+                                      ((filter pp) xs) .
+ eq fromd = fun from = (fn n => (n :: (from (n plus 1)))) .
+ eq taked = fun take = fn n0 => fn xs0 =>
+              case n0 of (p 0 => nil)
+                       || p n => (case xs0 of
+                                    ((p x :: p xs)=>(x :: ((take (n minus 1)) xs)))
+                                   || p nil => nil) .
+ eq not-divd = not-div is (fn x => (fn y => ((y mod x) ne 0))) .
+ eq sieved = fun sieve = fn xs0 => 
+                          case xs0 of
+                           ((p x :: p xs) => (x :: (sieve ((filter (not-div x)) xs)))) .
+ eq primesd = primes is sieve (from 2) .
+ eq fatd = fun fat = (fn n => (if (n eq 1) then 1 else (n times (fat (n minus 1))))) .
+
+   op prog : -> Exp .
+   eq prog = rec (filterd taked fromd not-divd sieved primesd (N is 3)) in ((take N) primes) .
+endm)
+
+(rew < exec (prog) ::: 'Exp, init-rec > .)
+
+eof
+
+(* This may look like SML, but the semantics must be
+ * call-by-name or lazy. Strict evaluation won't work.
+ *)
+let val rec filter = fn p => fn xs0 =>
+		       case xs0
+			 of [] => []
+			  | (x::xs) =>
+			      if (p x) then x :: (filter p xs)
+			      else filter p xs
+    val rec take = fn n0 => fn xs0 =>
+		     case n0
+		       of 0 => []
+			| n =>
+			    case xs0
+			      of (x::xs) => x :: (take (n - 1) xs)
+			       | [] => []
+    val rec from = fn n => n :: (from (n + 1))
+    val not_div = fn x => fn y => (y mod x) <> 0
+    val rec sieve = fn xs0 =>
+		      case xs0
+			of (x::xs) => x :: (sieve (filter (not_div x) xs))
+    val primes = sieve (from 2)
+    val N = 15 (* parameter *)
+in
+  take N primes
+end

@@ -1,0 +1,51 @@
+(msos PROCESS is
+
+ Proc .
+ Register .
+ Soup .
+
+ Register ::= Int | empty .
+
+ Proc ::= pid Int Register Register .
+
+ Soup ::= Proc .
+ Soup ::= Soup Soup [assoc comm] .
+
+               Proc -{...}-> Proc'
+ -- -------------------------------------
+ (Proc Soup) : Soup -{...}-> Proc' Soup .
+
+         Proc -{...}-> Proc'
+ -- -------------------------------------
+  Proc : Soup -{...}-> Proc' .
+sosm)
+
+(msos LOC is
+ Loc .
+ Loc ::= loc Int .
+sosm)
+
+(msos THREAD-GAME is 
+ see PROCESS .
+
+ Store = (Loc, Int) Map .
+ Label = {st : Store, st' : Store, ...} .
+
+                      Int' := lookup (loc 1, Store)
+ -- -----------------------------------------------------------------------------
+ (pid Int empty empty) : Proc -{st = Store, st' = Store, -}-> pid Int Int' empty .
+
+                      Int'' := lookup (loc 1, Store)
+ -- -----------------------------------------------------------------------------
+ (pid Int Int' empty) : Proc -{st = Store, st' = Store, -}-> pid Int Int' Int'' .
+
+      Int < 50, Int' < 50, Store' := (loc 1 |-> (Int' + Int'')) / Store
+ -- -----------------------------------------------------------------------------
+ (pid Int Int' Int'') : Proc -{st = Store, st' = Store', -}-> pid Int empty empty .
+sosm)
+
+--- We may reach an odd number, say, 41.
+
+(search [1] < ((pid 1 empty empty) (pid 2 empty empty))  ::: 'Soup, 
+          { st = loc 1 |-> 1, st' = loc 1 |-> 1 } >
+ =>* < S:Soup, { st = loc 1 |-> 41, st' = loc 1 |-> 1 } > .)

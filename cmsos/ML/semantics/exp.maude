@@ -1,0 +1,54 @@
+(msos Lang/ML/Exp is
+ see Cons/Prog, Cons/Prog/Exp .
+
+ see Cons/Exp, Cons/Exp/Boolean, Cons/Exp/Int,
+     --- Cons/Exp/Character, Cons/Exp/String, 
+     Cons/Exp/Id, Cons/Exp/cond, Cons/Exp/app-Op,
+     Cons/Exp/app-Id, Cons/Exp/tup, Cons/Exp/tup-seq .
+
+ see Cons/Arg, Cons/Arg/Exp .
+
+ see Cons/Op .
+
+ see Cons/Id .
+
+ Bindable ::= Value | Op .
+
+ Op ::= plus | times | minus | eq | lt | gt .
+
+ Passable ::= Value .
+sosm)
+
+(mod Lang/ML/Exp' is
+ including Lang/ML/Exp .
+ including QID .
+
+ vars i1 i2 : Int .
+
+ eq apply-op (plus, (i1, i2)) = i1 + i2 .
+ eq apply-op (minus, (i1, i2)) = i1 - i2 .
+ eq apply-op (times, (i1, i2)) = i1 * i2 .
+ eq apply-op (eq, (i1, i2)) = if i1 == i2 then tt else ff fi .
+ eq apply-op (lt, (i1, i2)) = if i1 < i2 then tt else ff fi .
+ eq apply-op (gt, (i1, i2)) = if i1 > i2 then tt else ff fi .
+
+ op ide : Op -> Id .
+ eq init-env = (ide(eq) |-> eq +++
+                ide(lt) |-> lt +++
+                ide(gt) |-> gt +++
+                ide(plus)  |-> plus +++
+                ide(times) |-> times +++
+                ide(minus) |-> minus) .
+
+
+ op ide : Qid -> Id .
+ op op : Qid -> Op .
+
+ eq op ('+) = plus .
+ eq op ('*) = times .
+ eq op ('-) = minus .
+ eq op ('<) = lt .
+ eq op ('>) = gt .
+ eq op ('=) = eq .
+
+endm)
