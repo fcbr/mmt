@@ -1,38 +1,39 @@
-Simple Example
-==============
+h1. Simple Example
 
-Let us define a very simple functional programming language in which
-there are only two possible operations: the sum of two expressions and
-the binding declarations using an Standard ML "let"-like construction.
+Let us define a very simple functional programming language in which there are only two possible operations: the sum of two expressions and the binding declarations using an Standard ML "let"-like construction.
 
-We begin by defining the module name and two sets: Exp represents the
-set of expressions and Id the set of identifiers.
+We begin by defining the module name and two sets: Exp represents the set of expressions and Id the set of identifiers.
 
+<pre>
     (msos SIMPLE-LANGUAGE is
      Exp .
      Id .
+</pre>
 
-We need an environment for the bindings, which is declared as a map
-from identifiers to integers (the set Int).
+We need an environment for the bindings, which is declared as a map from identifiers to integers (the set Int).
 
+<pre>
      Env = (Id, Int) Map .
+</pre>
 
-Now let us define the abstract syntax of our language using the
-following BNF declaration:
+Now let us define the abstract syntax of our language using the following BNF declaration:
 
+<pre>
      Exp ::= let Id = Int in Exp end
            | Exp sum Exp
            | Int
            | Id .
+</pre>
 
-As for the actual dynamic semantics, we first need to declare a
-read-only component env that will hold the environment.
+As for the actual dynamic semantics, we first need to declare a read-only component env that will hold the environment.
 
+<pre>
      Label = { env : Env, ... } .
+</pre>
 
-The remainder of the specification are the dynamic transition rules
-for the language constructions
+The remainder of the specification are the dynamic transition rules for the language constructions
 
+<pre>
                       Exp1 -{...}-> Exp'1
      -- --------------------------------------------
      (Exp1 sum Exp2) : Exp -{...}-> Exp'1 sum Exp2 .
@@ -58,26 +59,31 @@ for the language constructions
      -- --------------------------
      Id : Exp -{env = Env}-> Int .
     sosm)
+</pre>
 
-In order to test this simple language, let us execute the following
-program:
+In order to test this simple language, let us execute the following program:
 
+<pre>
     let x = 10 in
         let y = 10 in
             x sum y
         end
     end
+</pre>
 
 We begin by defining the two constants x and y.
 
+<pre>
     (mod TEST is 
      including SIMPLE-LANGUAGE .
 
      ops x y : -> Id .
      endm)
+</pre>
 
 Then, rewriting the following term gives us the expected result:
 
+<pre>
     (rew < (let x = 10 in
             let y = 10 in
                 x sum y
@@ -88,3 +94,4 @@ Then, rewriting the following term gives us the expected result:
       < let x = 10 in let y = 10 in x sum y end end ::: 'Exp,{env = void}>
     result Conf :
       < 20 ::: 'Exp,{env = void}>
+</pre>

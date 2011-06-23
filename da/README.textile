@@ -1,0 +1,5 @@
+h1. Distributed Algorithms
+
+This case study shows the use of MMT in the specification and verification of distributed algorithms, such as Dining Philosophers, Bakery Algorithm, Leader Election on Asynchronous Ring, etc.
+
+"Techical Report":case-study-da.pdf

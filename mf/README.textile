@@ -1,0 +1,6 @@
+h1. Mini-Freja
+
+"Mini-Freja":http://www.springer.com/computer/swe/book/978-3-540-65968-6?cm_mmc=Google-_-Book%20Search-_-Springer-_-0 is a pure functional programming language with a normal-order semantics. This specification was implemented with several purposes: it does not use Mosses's CMSOS, rather, giving the semantics for the language directly in MSDF; it does not need any external tools, parsing the language directly---with some limitations, as we shall see; it is a big-step semantics; and, finally, it has pattern matching capabilities.
+
+
+"Technical Report":case-study-mf.pdf
