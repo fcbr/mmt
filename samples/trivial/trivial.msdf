@@ -1,0 +1,51 @@
+(msos SIMPLE-LANGUAGE is
+ Exp .
+ Id .
+
+ Env = (Id, Int) Map .
+
+ Exp ::= let Id = Int in Exp end
+       | Exp sum Exp
+       | Int
+       | Id .
+
+ Label = { env : Env, ... } .
+
+                      Exp1 -{...}-> Exp'1
+     -- --------------------------------------------
+     (Exp1 sum Exp2) : Exp -{...}-> Exp'1 sum Exp2 .
+
+                     Exp2 -{...}-> Exp'2
+     -- ------------------------------------------
+     (Int sum Exp2) : Exp -{...}-> Int sum Exp'2 .
+
+          Int3 := Int1 + Int2
+     -- -----------------------------
+     (Int1 sum Int2) : Exp --> Int3 .
+
+
+        Env' := (Id |-> Int) / Env,
+                           Exp -{env = Env', ...}-> Exp'
+     -- ------------------------------------------------
+     (let Id = Int in Exp end) : Exp -{env = Env, ...}-> 
+       (let Id = Int in Exp' end) .
+
+     (let Id = Int in Int' end) : Exp --> Int' .
+
+        Int := lookup (Id, Env)
+     -- --------------------------
+     Id : Exp -{env = Env}-> Int .
+
+sosm)
+
+(mod TEST is 
+ including SIMPLE-LANGUAGE .
+
+ ops x y : -> Id .
+endm)
+
+(rew < (let x = 10 in
+            let y = 10 in
+                x sum y
+            end
+        end) ::: 'Exp, { env = void } > .)
