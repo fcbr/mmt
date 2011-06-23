@@ -1,1 +1,38 @@
 Maude MSOS Tool
+===============
+
+Developed by Fabricio Chalub and Christiano Braga.
+
+Maude MSOS Tool (MMT) is an execution environment for Modular
+Structural Operational Semantics (MSOS,
+http://www.cs.swan.ac.uk/~cspdm/research.html) specifications that
+brings the power of analysis available in the Maude system to MSOS
+specifications.
+
+MSOS, developed by Mosses, is a modular variant of Plotkin's SOS. Like
+SOS, MSOS is a framework suitable for the specification of a wide
+range of computational formalisms, including programming language
+semantics, and concurrent systems. Unlike SOS, MSOS has the advantage
+of being able to specify completely modular specifications, an
+advantage when considering the engineering decisions that one must
+face when designing complex or "exploratory" -- when new features to
+be implemented are not known in advance -- specification projects. As
+an example: consider an SOS specification of a functional language
+fragment with environments; if imperative features must be added later
+to the language, therefore requesting a store component to be
+considered, all rules written for the functional language fragment
+would have to be retracted and replaced by new rules that also involve
+the store component. MSOS makes this unnecessary by structuring the
+labels as records of semantic components, such as the environment and
+the store, and abstracting from the rules the fact that new components
+may be added in future extensions.
+
+MMT is formally designed, which means that it is an implementation of
+a semantics-preserving mapping from MSOS to rewriting logic. MMT
+supports a specification language, designed by Mosses and Chalub,
+called MSDF, the Modular SOS Specification Formalism, which is a
+language that combines an extended-BNF notation for the definition of
+abstract grammar and a textual representation for MSOS transitions
+that captures mathematical notation commonly used in papers and
+textbooks, making the language itself based on well known
+"user-friendly" notations available on the literature.
