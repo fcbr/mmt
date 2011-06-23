@@ -1,0 +1,13 @@
+h1. Case studies
+
+h2. Constructive MSOS
+
+"Mosses's":http://www.cs.swan.ac.uk/~cspdm/ Constructive MSOS (CMSOS) is a technique for the specification of programming languages semantics based on the idea that each language construction should be specified in a separated module and the complete language specification is based on the combination of all these modules. A further generalization that Constructive MSOS makes is to use neutral constructions with regard to a particular programming language. This allows a high degree of reuse of those modules on a wide range of programming languages. Mosses's lecture notes contain a proposed set of these abstract constructions, which we have implemented and call it also as CMSOS. We also exemplify the use of these abstract constructions to give the formal semantics of two different programming languages: a subset ML and a subset of Java, called MiniJava.
+
+h2. Distributed Algorithms
+
+This case study shows the use of MMT in the specification and verification of distributed algorithms, such as Dining Philosophers, Bakery Algorithm, Leader Election on Asynchronous Ring, etc.
+
+h2. Distributed Algorithms
+
+This case study shows the use of MMT in the specification and verification of distributed algorithms, such as Dining Philosophers, Bakery Algorithm, Leader Election on Asynchronous Ring, etc.
