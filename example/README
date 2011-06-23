@@ -1,0 +1,90 @@
+Simple Example
+==============
+
+Let us define a very simple functional programming language in which
+there are only two possible operations: the sum of two expressions and
+the binding declarations using an Standard ML "let"-like construction.
+
+We begin by defining the module name and two sets: Exp represents the
+set of expressions and Id the set of identifiers.
+
+    (msos SIMPLE-LANGUAGE is
+     Exp .
+     Id .
+
+We need an environment for the bindings, which is declared as a map
+from identifiers to integers (the set Int).
+
+     Env = (Id, Int) Map .
+
+Now let us define the abstract syntax of our language using the
+following BNF declaration:
+
+     Exp ::= let Id = Int in Exp end
+           | Exp sum Exp
+           | Int
+           | Id .
+
+As for the actual dynamic semantics, we first need to declare a
+read-only component env that will hold the environment.
+
+     Label = { env : Env, ... } .
+
+The remainder of the specification are the dynamic transition rules
+for the language constructions
+
+                      Exp1 -{...}-> Exp'1
+     -- --------------------------------------------
+     (Exp1 sum Exp2) : Exp -{...}-> Exp'1 sum Exp2 .
+
+                     Exp2 -{...}-> Exp'2
+     -- ------------------------------------------
+     (Int sum Exp2) : Exp -{...}-> Int sum Exp'2 .
+
+          Int3 := Int1 + Int2
+     -- -----------------------------
+     (Int1 sum Int2) : Exp --> Int3 .
+
+
+        Env' := (Id |-> Int) / Env,
+                           Exp -{env = Env', ...}-> Exp'
+     -- ------------------------------------------------
+     (let Id = Int in Exp end) : Exp -{env = Env, ...}-> 
+       (let Id = Int in Exp' end) .
+
+     (let Id = Int in Int' end) : Exp --> Int' .
+
+        Int := lookup (Id, Env)
+     -- --------------------------
+     Id : Exp -{env = Env}-> Int .
+    sosm)
+
+In order to test this simple language, let us execute the following
+program:
+
+    let x = 10 in
+        let y = 10 in
+            x sum y
+        end
+    end
+
+We begin by defining the two constants x and y.
+
+    (mod TEST is 
+     including SIMPLE-LANGUAGE .
+
+     ops x y : -> Id .
+     endm)
+
+Then, rewriting the following term gives us the expected result:
+
+    (rew < (let x = 10 in
+            let y = 10 in
+                x sum y
+            end
+            end) ::: 'Exp, { env = void } > .)
+
+    rewrite in TEST :
+      < let x = 10 in let y = 10 in x sum y end end ::: 'Exp,{env = void}>
+    result Conf :
+      < 20 ::: 'Exp,{env = void}>
