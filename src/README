@@ -1,0 +1,52 @@
+How to install
+
+You need Maude 2.3 (http://maude.cs.uiuc.edu/versions/2.3/)
+
+Just copy the file to a directory and point $MAUDE_LIB to that
+directory. Optionally, put it on the same directory you have Full
+Maude or the prelude.maude file.
+
+How to run
+
+Use the following command line.
+
+$ maude mmt
+
+                     \||||||||||||||||||/
+                   --- Welcome to Maude ---
+                     /||||||||||||||||||\
+
+       Full Maude 2.3 '(February 12th', 2007')
+
+rewrites: 45 in 0ms cpu (3ms real) (~ rewrites/second)
+
+           Maude MSOS Tool 2.3 (April 8th 2007)
+
+rewrites: 1975 in 20ms cpu (88ms real) (98750 rewrites/second)
+Introduced module @@SEQUENCE
+
+rewrites: 5739 in 0ms cpu (18ms real) (~ rewrites/second)
+Introduced module @@LIST
+
+rewrites: 3487 in 10ms cpu (19ms real) (348700 rewrites/second)
+Introduced module @@SET
+
+rewrites: 5022 in 20ms cpu (20ms real) (251100 rewrites/second)
+Introduced module @@MAP
+
+rewrites: 3033 in 10ms cpu (16ms real) (303300 rewrites/second)
+Introduced view Seq'{Rat'}
+
+rewrites: 21591 in 30ms cpu (121ms real) (719700 rewrites/second)
+Introduced MSOS module BOOLEAN
+
+rewrites: 2249 in 0ms cpu (5ms real) (~ rewrites/second)
+Introduced view Seq'{Int'}
+
+rewrites: 2810 in 0ms cpu (21ms real) (~ rewrites/second)
+Introduced module @@INTEGER
+
+rewrites: 2036 in 10ms cpu (6ms real) (203600 rewrites/second)
+Introduced module @@RATIONAL
+
+Maude> 
