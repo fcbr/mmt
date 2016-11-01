@@ -2,7 +2,7 @@ h1. Maude MSOS Tool
 
 Developed by Fabricio Chalub and Christiano Braga.
 
-Send bug reports and suggestions to fchalub@ic.uff.br
+Send bug reports and suggestions to fcbrbr@gmail.com
 
 Maude MSOS Tool (MMT) is an execution environment for Modular Structural Operational Semantics ("MSOS":http://www.cs.swan.ac.uk/~cspdm/research.html) specifications that brings the power of analysis available in the Maude system to MSOS specifications.
 
